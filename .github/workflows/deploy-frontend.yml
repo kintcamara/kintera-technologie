@@ -86,7 +86,7 @@ jobs:
       # ------------------------------------------
 
       - name: Install dependencies
-        working-directory: kintera-technologie
+        working-directory: .
         run: npm install
 
       # ------------------------------------------
@@ -94,7 +94,7 @@ jobs:
       # ------------------------------------------
 
       - name: Type check
-        working-directory: kintera-technologie
+        working-directory: .
         run: npm run typecheck
 
       # ------------------------------------------
@@ -103,7 +103,7 @@ jobs:
 
       - name: Build
         if: github.event_name == 'pull_request'
-        working-directory: kintera-technologie
+        working-directory: .
         env:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
