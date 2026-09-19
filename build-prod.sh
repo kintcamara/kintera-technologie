@@ -2,7 +2,7 @@
 set -e
 
 docker build \
-  --build-arg NEXT_PUBLIC_SITE_URL="https://kintera.com" \
+  --build-arg NEXT_PUBLIC_SITE_URL="https://kintera.techcoach360.com" \
   --build-arg NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="YOUR_NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION" \
   --build-arg NEXT_PUBLIC_RESEND_API_KEY="" \
   --build-arg NEXT_PUBLIC_CONTACT_TO_EMAIL="kintcamarapro@gmail.com" \
