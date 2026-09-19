@@ -155,7 +155,7 @@ jobs:
       # ==========================================
 
       - name: Make build script executable
-        run: chmod +x "${{ env.APP_DIR }}/build-prod.sh"
+        run: chmod +x build-prod.sh
 
       - name: Build Docker image
         working-directory: kintera-site
@@ -163,9 +163,9 @@ jobs:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
 
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          CONTACT_TO_EMAIL: ${{ secrets.CONTACT_TO_EMAIL }}
-          CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
+          RESEND_API_KEY: ${{ vars.RESEND_API_KEY }}
+          CONTACT_TO_EMAIL: ${{ vars.CONTACT_TO_EMAIL }}
+          CONTACT_FROM_EMAIL: ${{ vars.CONTACT_FROM_EMAIL }}
 
         run: |
           ./build-prod.sh
