@@ -195,7 +195,7 @@ jobs:
             docker run -d \
               --name kintera-frontend \
               --restart unless-stopped \
-              -p 5300:3000 \
+              -p 5010:3000 \
               kintera:frontend
 
 
