@@ -160,12 +160,11 @@ jobs:
       # ==========================================
 
       - name: Make build script executable
-        run: chmod +x /build-prod.sh
+        run: chmod +x build-prod.sh
 
       - name: Build Docker image
         working-directory: .
-        run: |
-          ./build-prod.sh
+        run: ./build-prod.sh
 
 
       # ==========================================
