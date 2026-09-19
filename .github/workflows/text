@@ -1,0 +1,224 @@
+name: Build and Deploy Kintera Frontend
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - "**.md"
+
+  pull_request:
+    branches:
+      - develop
+    paths-ignore:
+      - "**.md"
+
+  workflow_dispatch:
+
+# ============================================
+# Évite plusieurs builds simultanés
+# ============================================
+
+concurrency:
+  group: kintera-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+
+# ============================================
+# JOB
+# ============================================
+
+jobs:
+
+  build:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: [24]
+
+    steps:
+
+      # ==========================================
+      # Checkout
+      # ==========================================
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      # ==========================================
+      # Node.js
+      # ==========================================
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+
+      # ==========================================
+      # Install dependencies
+      # ==========================================
+
+      - name: Install dependencies
+        run: npm install
+
+
+      # ==========================================
+      # TypeScript
+      # ==========================================
+
+      - name: Type check
+        run: npm run typecheck
+
+
+      # ==========================================
+      # Make build script executable
+      # ==========================================
+
+      - name: Make build script executable
+        run: chmod +x build-prod.sh
+
+
+      # ==========================================
+      # Build Docker image
+      # ==========================================
+
+      - name: Build Docker image
+        run: ./build-prod.sh
+
+
+      # ==========================================
+      # Save Docker image to tar
+      # ==========================================
+
+      - name: Save Docker image to tar
+        run: |
+          docker save kintera:frontend -o kintera-frontend.tar
+          chmod 644 kintera-frontend.tar
+
+
+      # ==========================================
+      # Create target directory on VPS
+      # ==========================================
+
+      - name: Create target directory on VPS
+        uses: appleboy/ssh-action@master
+
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+
+          script: |
+            set -e
+
+            if [ ! -d /var/www/kintera/frontend ]; then
+              echo "📁 Création du dossier /var/www/kintera/frontend..."
+              mkdir -p /var/www/kintera/frontend
+            fi
+
+            echo "✅ Dossier Kintera prêt"
+
+
+      # ==========================================
+      # Copy Docker image to VPS
+      # ==========================================
+
+      - name: Copy Docker image to VPS
+        uses: appleboy/scp-action@v0.1.7
+
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+
+          source: "kintera-frontend.tar"
+          target: "/tmp/"
+
+
+      # ==========================================
+      # Deploy to Production Server
+      # ==========================================
+
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@master
+
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+
+          script: |
+            set -e
+
+            cd /var/www/kintera/frontend
+
+            echo "=========================================="
+            echo "🚀 KINTERA DEPLOYMENT"
+            echo "=========================================="
+
+
+            # ==========================================
+            # Load Docker image
+            # ==========================================
+
+            echo "📦 Loading Docker image..."
+
+            docker load -i /tmp/kintera-frontend.tar
+
+            echo "✅ Docker image loaded"
+
+
+            # ==========================================
+            # Stop old container
+            # ==========================================
+
+            echo "🧹 Stopping old container..."
+
+            docker stop kintera-frontend || true
+
+            docker rm kintera-frontend || true
+
+
+            # ==========================================
+            # Start new container
+            # ==========================================
+
+            echo "🚀 Starting new container..."
+
+            docker run -d \
+              --name kintera-frontend \
+              --restart unless-stopped \
+              -p 5010:3000 \
+              kintera:frontend
+
+
+            # ==========================================
+            # Remove tar file
+            # ==========================================
+
+            echo "🧹 Cleaning temporary Docker file..."
+
+            rm -f /tmp/kintera-frontend.tar
+
+
+            # ==========================================
+            # Check container
+            # ==========================================
+
+            echo "=========================================="
+            echo "📊 CONTAINER STATUS"
+            echo "=========================================="
+
+            docker ps --filter name=kintera-frontend
+
+
+            echo "=========================================="
+            echo "🎉 KINTERA DEPLOYMENT SUCCESSFUL"
+            echo "=========================================="
