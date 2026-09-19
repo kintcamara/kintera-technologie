@@ -256,16 +256,6 @@ jobs:
           REMOTE_DIR: ${{ env.REMOTE_DIR }}
           APP_PORT: ${{ env.APP_PORT }}
 
-          # --------------------------------------
-          # Kintera runtime secrets
-          # --------------------------------------
-
-          NEXT_PUBLIC_RESEND_API_KEY: ${{ vars.NEXT_PUBLIC_RESEND_API_KEY }}
-          NEXT_PUBLIC_CONTACT_TO_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_TO_EMAIL }}
-          NEXT_PUBLIC_CONTACT_FROM_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_FROM_EMAIL }}
-          NEXT_PUBLIC_WHATSAPP_RAW: ${{ vars.NEXT_PUBLIC_WHATSAPP_RAW }}
-          NEXT_PUBLIC_WHATSAPP_DISPLAY: ${{ vars.NEXT_PUBLIC_WHATSAPP_DISPLAY }}
-
         with:
 
           # --------------------------------------
@@ -287,12 +277,7 @@ jobs:
             CONTAINER_NAME,
             TAR_FILE,
             REMOTE_DIR,
-            APP_PORT,
-            NEXT_PUBLIC_RESEND_API_KEY,
-            NEXT_PUBLIC_CONTACT_TO_EMAIL,
-            NEXT_PUBLIC_CONTACT_FROM_EMAIL,
-            NEXT_PUBLIC_WHATSAPP_RAW,
-            NEXT_PUBLIC_WHATSAPP_DISPLAY
+            APP_PORT
 
           # ======================================
           # Script serveur
@@ -439,9 +424,6 @@ jobs:
                   --init \
                   -p "127.0.0.1:${APP_PORT}:3000" \
                   -e NODE_ENV=production \
-                  -e RESEND_API_KEY="$RESEND_API_KEY" \
-                  -e CONTACT_TO_EMAIL="$CONTACT_TO_EMAIL" \
-                  -e CONTACT_FROM_EMAIL="$CONTACT_FROM_EMAIL" \
                   "$PREVIOUS_IMAGE"
 
                 echo "✅ Previous version restored"
