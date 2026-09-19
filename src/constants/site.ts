@@ -29,11 +29,11 @@ export const SITE = {
 export const CONTACT = {
   email: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "kintcamarapro@gmail.com",
   /** Format international sans espaces, utilisé pour les liens wa.me */
-  whatsappRaw: process.env.NEXT_PUBLIC_WHATSAPP_RAW ?? "212600554582",
+  whatsappRaw: process.env.NEXT_PUBLIC_WHATSAPP_RAW ?? "212723500308",
   /** Format lisible affiché à l'écran */
-  whatsappDisplay: process.env.NEXT_PUBLIC_WHATSAPP_DISPLAY ?? "+212 600 554 582",
+  whatsappDisplay: process.env.NEXT_PUBLIC_WHATSAPP_DISPLAY ?? "+212 723 500 308",
   /** Tel qu'indiqué par le client (indicatif international en 00) */
-  phoneDial: "00212600554582",
+  phoneDial: "00212723500308",
   responseTime: "Réponse sous 24 h ouvrées",
   availability: "Ouvert à de nouveaux projets",
 } as const;

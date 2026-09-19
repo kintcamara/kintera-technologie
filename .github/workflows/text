@@ -3,13 +3,13 @@ name: Build and Deploy Kintera Frontend
 on:
   push:
     branches:
-      - develop
+     # - develop
     paths-ignore:
       - "**.md"
 
   pull_request:
     branches:
-      - develop
+      # - develop
     paths-ignore:
       - "**.md"
 
