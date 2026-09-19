@@ -106,7 +106,12 @@ jobs:
         working-directory: kintera-site
         env:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
+          NEXT_PUBLIC_RESEND_API_KEY: ${{ vars.NEXT_PUBLIC_RESEND_API_KEY }}
+          NEXT_PUBLIC_CONTACT_TO_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_TO_EMAIL }}
+          NEXT_PUBLIC_CONTACT_FROM_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_FROM_EMAIL }}
+          NEXT_PUBLIC_WHATSAPP_RAW: ${{ vars.NEXT_PUBLIC_WHATSAPP_RAW }}
+          NEXT_PUBLIC_WHATSAPP_DISPLAY: ${{ vars.NEXT_PUBLIC_WHATSAPP_DISPLAY }}
         run: npm run build
 
 
@@ -155,18 +160,10 @@ jobs:
       # ==========================================
 
       - name: Make build script executable
-        run: chmod +x build-prod.sh
+        run: chmod +x /build-prod.sh
 
       - name: Build Docker image
         working-directory: kintera-site
-        env:
-          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
-
-          RESEND_API_KEY: ${{ vars.RESEND_API_KEY }}
-          CONTACT_TO_EMAIL: ${{ vars.CONTACT_TO_EMAIL }}
-          CONTACT_FROM_EMAIL: ${{ vars.CONTACT_FROM_EMAIL }}
-
         run: |
           ./build-prod.sh
 
@@ -263,9 +260,11 @@ jobs:
           # Kintera runtime secrets
           # --------------------------------------
 
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          CONTACT_TO_EMAIL: ${{ secrets.CONTACT_TO_EMAIL }}
-          CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
+          NEXT_PUBLIC_RESEND_API_KEY: ${{ vars.NEXT_PUBLIC_RESEND_API_KEY }}
+          NEXT_PUBLIC_CONTACT_TO_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_TO_EMAIL }}
+          NEXT_PUBLIC_CONTACT_FROM_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_FROM_EMAIL }}
+          NEXT_PUBLIC_WHATSAPP_RAW: ${{ vars.NEXT_PUBLIC_WHATSAPP_RAW }}
+          NEXT_PUBLIC_WHATSAPP_DISPLAY: ${{ vars.NEXT_PUBLIC_WHATSAPP_DISPLAY }}
 
         with:
 
@@ -289,9 +288,11 @@ jobs:
             TAR_FILE,
             REMOTE_DIR,
             APP_PORT,
-            RESEND_API_KEY,
-            CONTACT_TO_EMAIL,
-            CONTACT_FROM_EMAIL
+            NEXT_PUBLIC_RESEND_API_KEY,
+            NEXT_PUBLIC_CONTACT_TO_EMAIL,
+            NEXT_PUBLIC_CONTACT_FROM_EMAIL,
+            NEXT_PUBLIC_WHATSAPP_RAW,
+            NEXT_PUBLIC_WHATSAPP_DISPLAY
 
           # ======================================
           # Script serveur
@@ -361,9 +362,6 @@ jobs:
               --init \
               -p "127.0.0.1:${APP_PORT}:3000" \
               -e NODE_ENV=production \
-              -e RESEND_API_KEY="$RESEND_API_KEY" \
-              -e CONTACT_TO_EMAIL="$CONTACT_TO_EMAIL" \
-              -e CONTACT_FROM_EMAIL="$CONTACT_FROM_EMAIL" \
               "$IMAGE"
 
 
