@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+echo "Building Docker image for production..."
 
 docker build \
   --build-arg NEXT_PUBLIC_SITE_URL="https://kintera.techcoach360.com" \
@@ -12,3 +13,5 @@ docker build \
   --no-cache \
   -f Dockerfile \
   -t kintera:frontend .
+
+echo "Docker image built successfully."
