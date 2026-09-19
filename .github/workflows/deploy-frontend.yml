@@ -7,7 +7,7 @@ on:
       # - master
       # - main
     paths:
-      - "kintera-site/**"
+      - "kintera-technologie/**"
       - ".github/workflows/deploy-frontend.yml"
 
   pull_request:
@@ -16,7 +16,7 @@ on:
       # - master
       # - main
     paths:
-      - "kintera-site/**"
+      - "kintera-technologie/**"
       - ".github/workflows/deploy-frontend.yml"
 
   workflow_dispatch:
@@ -41,7 +41,7 @@ permissions:
 # ============================================
 
 env:
-  APP_DIR: kintera-site
+  APP_DIR: kintera-technologie
   IMAGE: kintera:frontend
   PREVIOUS_IMAGE: kintera:previous
   CONTAINER_NAME: kintera-frontend
@@ -86,7 +86,7 @@ jobs:
       # ------------------------------------------
 
       - name: Install dependencies
-        working-directory: kintera-site
+        working-directory: kintera-technologie
         run: npm install
 
       # ------------------------------------------
@@ -94,7 +94,7 @@ jobs:
       # ------------------------------------------
 
       - name: Type check
-        working-directory: kintera-site
+        working-directory: kintera-technologie
         run: npm run typecheck
 
       # ------------------------------------------
@@ -103,7 +103,7 @@ jobs:
 
       - name: Build
         if: github.event_name == 'pull_request'
-        working-directory: kintera-site
+        working-directory: kintera-technologie
         env:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
@@ -163,7 +163,7 @@ jobs:
         run: chmod +x /build-prod.sh
 
       - name: Build Docker image
-        working-directory: kintera-site
+        working-directory: kintera-technologie
         run: |
           ./build-prod.sh
 
