@@ -14,7 +14,7 @@ on:
     branches:
       - develop
       # - master
-      # - main
+      - main
     paths:
       - "kintera-technologie/**"
       - ".github/workflows/deploy-frontend.yml"
