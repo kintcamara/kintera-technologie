@@ -3,18 +3,18 @@ name: Build and Deploy Kintera Frontend
 on:
   push:
     branches:
-      #- master
-      #- main
       - develop
+      # - master
+      # - main
     paths:
       - "kintera-site/**"
       - ".github/workflows/deploy-frontend.yml"
 
   pull_request:
     branches:
-      #- master
-      #- main
       - develop
+      # - master
+      # - main
     paths:
       - "kintera-site/**"
       - ".github/workflows/deploy-frontend.yml"
@@ -74,8 +74,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
-
+          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
 
   # ============================================
   # 2. BUILD + DEPLOY
@@ -94,12 +93,16 @@ jobs:
         github.event_name == 'push' &&
         (
           github.ref == 'refs/heads/master' ||
-          github.ref == 'refs/heads/main'
+          github.ref == 'refs/heads/main' ||
           github.ref == 'refs/heads/develop'
         )
       )
 
     steps:
+
+      # ==========================================
+      # Checkout
+      # ==========================================
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -112,8 +115,14 @@ jobs:
         run: chmod +x "${{ env.APP_DIR }}/build-prod.sh"
 
       - name: Build Docker image
+        working-directory: kintera-site
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_TO_EMAIL: ${{ secrets.CONTACT_TO_EMAIL }}
+          CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
         run: |
-          cd "${{ env.APP_DIR }}"
           ./build-prod.sh
 
       # ==========================================
@@ -183,9 +192,9 @@ jobs:
           REMOTE_DIR: ${{ env.REMOTE_DIR }}
           APP_PORT: ${{ env.APP_PORT }}
 
-          NEXT_PUBLIC_RESEND_API_KEY: ${{ secrets.NEXT_PUBLIC_RESEND_API_KEY }}
-          NEXT_PUBLIC_CONTACT_TO_EMAIL: ${{ secrets.NEXT_PUBLIC_CONTACT_TO_EMAIL }}
-          NEXT_PUBLIC_CONTACT_EMAIL: ${{ secrets.NEXT_PUBLIC_CONTACT_EMAIL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CONTACT_TO_EMAIL: ${{ secrets.CONTACT_TO_EMAIL }}
+          CONTACT_FROM_EMAIL: ${{ secrets.CONTACT_FROM_EMAIL }}
 
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -200,9 +209,9 @@ jobs:
             TAR_FILE,
             REMOTE_DIR,
             APP_PORT,
-            NEXT_PUBLIC_RESEND_API_KEY,
-            NEXT_PUBLIC_CONTACT_TO_EMAIL,
-            NEXT_PUBLIC_CONTACT_EMAIL
+            RESEND_API_KEY,
+            CONTACT_TO_EMAIL,
+            CONTACT_FROM_EMAIL
 
           script: |
 
@@ -250,9 +259,9 @@ jobs:
               --init \
               -p "127.0.0.1:${APP_PORT}:3000" \
               -e NODE_ENV=production \
-              -e NEXT_PUBLIC_RESEND_API_KEY="$NEXT_PUBLIC_RESEND_API_KEY" \
-              -e NEXT_PUBLIC_CONTACT_TO_EMAIL="$NEXT_PUBLIC_CONTACT_TO_EMAIL" \
-              -e NEXT_PUBLIC_CONTACT_EMAIL="$NEXT_PUBLIC_CONTACT_EMAIL" \
+              -e RESEND_API_KEY="$RESEND_API_KEY" \
+              -e CONTACT_TO_EMAIL="$CONTACT_TO_EMAIL" \
+              -e CONTACT_FROM_EMAIL="$CONTACT_FROM_EMAIL" \
               "$IMAGE"
 
             # ==========================================
@@ -306,9 +315,9 @@ jobs:
                   --init \
                   -p "127.0.0.1:${APP_PORT}:3000" \
                   -e NODE_ENV=production \
-                  -e NEXT_PUBLIC_RESEND_API_KEY="$NEXT_PUBLIC_RESEND_API_KEY" \
-                  -e NEXT_PUBLIC_CONTACT_TO_EMAIL="$NEXT_PUBLIC_CONTACT_TO_EMAIL" \
-                  -e NEXT_PUBLIC_CONTACT_EMAIL="$NEXT_PUBLIC_CONTACT_EMAIL" \
+                  -e RESEND_API_KEY="$RESEND_API_KEY" \
+                  -e CONTACT_TO_EMAIL="$CONTACT_TO_EMAIL" \
+                  -e CONTACT_FROM_EMAIL="$CONTACT_FROM_EMAIL" \
                   "$PREVIOUS_IMAGE"
 
                 echo "✅ Previous version restored"
