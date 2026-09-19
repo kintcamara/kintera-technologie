@@ -232,3 +232,4 @@ npm run dev:webpack
 2. Configurer l'envoi d'e-mails ou conserver le repli messagerie/WhatsApp.
 3. Déployer (Vercel, ou `npm run build` puis `npm run start` derrière Nginx).
 # kintera-technologie
+# kintera-technologie
