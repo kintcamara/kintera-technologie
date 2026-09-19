@@ -4,201 +4,108 @@ on:
   push:
     branches:
       - develop
-      # - master
-      # - main
-    paths:
-      - "kintera-technologie/**"
-      - ".github/workflows/deploy-frontend.yml"
+    paths-ignore:
+      - "**.md"
 
   pull_request:
     branches:
       - develop
-      # - master
-      # - main
-    paths:
-      - "kintera-technologie/**"
-      - ".github/workflows/deploy-frontend.yml"
+    paths-ignore:
+      - "**.md"
 
   workflow_dispatch:
 
 # ============================================
-# Évite plusieurs déploiements simultanés
+# Évite plusieurs builds simultanés
 # ============================================
 
 concurrency:
   group: kintera-frontend-${{ github.ref }}
   cancel-in-progress: true
 
-# ============================================
-# Permissions
-# ============================================
-
-permissions:
-  contents: read
 
 # ============================================
-# Variables globales
-# ============================================
-
-env:
-  APP_DIR: kintera-technologie
-  IMAGE: kintera:frontend
-  PREVIOUS_IMAGE: kintera:previous
-  CONTAINER_NAME: kintera-frontend
-  TAR_FILE: kintera-frontend.tar
-  REMOTE_DIR: /var/www/kintera/frontend
-  APP_PORT: "5300"
-
-# ============================================
-# JOBS
+# JOB
 # ============================================
 
 jobs:
 
-  # ============================================
-  # 1. QUALITY CHECK
-  # ============================================
-
-  quality:
-    name: Quality Check
+  build:
+    name: Build and Deploy
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: [24]
 
     steps:
 
-      # ------------------------------------------
+      # ==========================================
       # Checkout
-      # ------------------------------------------
+      # ==========================================
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ------------------------------------------
-      # Node.js 24
-      # ------------------------------------------
 
-      - name: Setup Node.js
+      # ==========================================
+      # Node.js
+      # ==========================================
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
 
-      # ------------------------------------------
+
+      # ==========================================
       # Install dependencies
-      # ------------------------------------------
+      # ==========================================
 
       - name: Install dependencies
-        working-directory: .
         run: npm install
 
-      # ------------------------------------------
+
+      # ==========================================
       # TypeScript
-      # ------------------------------------------
+      # ==========================================
 
       - name: Type check
-        working-directory: .
         run: npm run typecheck
 
-      # ------------------------------------------
-      # Build Next.js
-      # ------------------------------------------
-
-      - name: Build
-        if: github.event_name == 'pull_request'
-        working-directory: .
-        env:
-          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
-          NEXT_PUBLIC_RESEND_API_KEY: ${{ vars.NEXT_PUBLIC_RESEND_API_KEY }}
-          NEXT_PUBLIC_CONTACT_TO_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_TO_EMAIL }}
-          NEXT_PUBLIC_CONTACT_FROM_EMAIL: ${{ vars.NEXT_PUBLIC_CONTACT_FROM_EMAIL }}
-          NEXT_PUBLIC_WHATSAPP_RAW: ${{ vars.NEXT_PUBLIC_WHATSAPP_RAW }}
-          NEXT_PUBLIC_WHATSAPP_DISPLAY: ${{ vars.NEXT_PUBLIC_WHATSAPP_DISPLAY }}
-        run: npm run build
-
-
-  # ============================================
-  # 2. BUILD + DEPLOY
-  # ============================================
-
-  deploy:
-    name: Build Docker & Deploy
-
-    needs: quality
-
-    runs-on: ubuntu-latest
-
-    # ------------------------------------------
-    # Déploiement :
-    # - workflow_dispatch
-    # - push master
-    # - push main
-    # - push develop
-    # ------------------------------------------
-
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (
-        github.event_name == 'push' &&
-        (
-          github.ref == 'refs/heads/master' ||
-          github.ref == 'refs/heads/main' ||
-          github.ref == 'refs/heads/develop'
-        )
-      )
-
-    steps:
 
       # ==========================================
-      # Checkout
+      # Make build script executable
       # ==========================================
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Make build script executable
+        run: chmod +x build-prod.sh
 
 
       # ==========================================
       # Build Docker image
       # ==========================================
 
-      - name: Make build script executable
-        run: chmod +x build-prod.sh
-
       - name: Build Docker image
-        working-directory: .
         run: ./build-prod.sh
 
 
       # ==========================================
-      # Save Docker image
+      # Save Docker image to tar
       # ==========================================
 
-      - name: Save Docker image
+      - name: Save Docker image to tar
         run: |
-          docker save "${IMAGE}" -o "${TAR_FILE}"
-
-          chmod 644 "${TAR_FILE}"
-
-          echo "=========================================="
-          echo "Docker image"
-          echo "=========================================="
-
-          docker images "${IMAGE}"
-
-          echo "=========================================="
-          echo "Docker tar"
-          echo "=========================================="
-
-          ls -lh "${TAR_FILE}"
+          docker save kintera:frontend -o kintera-frontend.tar
+          chmod 644 kintera-frontend.tar
 
 
       # ==========================================
-      # Prepare VPS
+      # Create target directory on VPS
       # ==========================================
 
-      - name: Prepare VPS
-        uses: appleboy/ssh-action@v1.2.2
-
-        env:
-          REMOTE_DIR: ${{ env.REMOTE_DIR }}
+      - name: Create target directory on VPS
+        uses: appleboy/ssh-action@master
 
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -206,23 +113,22 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
 
-          envs: REMOTE_DIR
-
           script: |
             set -e
 
-            mkdir -p "$REMOTE_DIR"
+            if [ ! -d /var/www/kintera/frontend ]; then
+              echo "📁 Création du dossier /var/www/kintera/frontend..."
+              mkdir -p /var/www/kintera/frontend
+            fi
 
-            echo "=========================================="
-            echo "✅ VPS READY"
-            echo "=========================================="
+            echo "✅ Dossier Kintera prêt"
 
 
       # ==========================================
-      # Upload Docker image
+      # Copy Docker image to VPS
       # ==========================================
 
-      - name: Upload Docker image
+      - name: Copy Docker image to VPS
         uses: appleboy/scp-action@v0.1.7
 
         with:
@@ -231,62 +137,27 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
 
-          source: ${{ env.TAR_FILE }}
+          source: "kintera-frontend.tar"
           target: "/tmp/"
 
 
       # ==========================================
-      # Deploy
+      # Deploy to Production Server
       # ==========================================
 
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.2.2
-
-        env:
-
-          # --------------------------------------
-          # Docker
-          # --------------------------------------
-
-          IMAGE: ${{ env.IMAGE }}
-          PREVIOUS_IMAGE: ${{ env.PREVIOUS_IMAGE }}
-          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
-          TAR_FILE: ${{ env.TAR_FILE }}
-          REMOTE_DIR: ${{ env.REMOTE_DIR }}
-          APP_PORT: ${{ env.APP_PORT }}
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@master
 
         with:
-
-          # --------------------------------------
-          # SSH
-          # --------------------------------------
-
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
 
-          # --------------------------------------
-          # Variables envoyées au serveur
-          # --------------------------------------
-
-          envs: >-
-            IMAGE,
-            PREVIOUS_IMAGE,
-            CONTAINER_NAME,
-            TAR_FILE,
-            REMOTE_DIR,
-            APP_PORT
-
-          # ======================================
-          # Script serveur
-          # ======================================
-
           script: |
-
             set -e
 
-            cd "$REMOTE_DIR"
+            cd /var/www/kintera/frontend
 
             echo "=========================================="
             echo "🚀 KINTERA DEPLOYMENT"
@@ -294,175 +165,60 @@ jobs:
 
 
             # ==========================================
-            # Backup image actuelle
-            # ==========================================
-
-            if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-
-              docker tag "$IMAGE" "$PREVIOUS_IMAGE"
-
-              echo "✅ Previous image saved"
-
-            else
-
-              echo "ℹ️ No previous image found"
-
-            fi
-
-
-            # ==========================================
-            # Load nouvelle image
+            # Load Docker image
             # ==========================================
 
             echo "📦 Loading Docker image..."
 
-            docker load -i "/tmp/$TAR_FILE"
+            docker load -i /tmp/kintera-frontend.tar
 
-            docker image inspect "$IMAGE" >/dev/null
-
-            echo "✅ Image loaded"
+            echo "✅ Docker image loaded"
 
 
             # ==========================================
-            # Stop ancien container
+            # Stop old container
             # ==========================================
 
-            echo "🛑 Stopping old container..."
+            echo "🧹 Stopping old container..."
 
-            docker stop "$CONTAINER_NAME" || true
+            docker stop kintera-frontend || true
 
-            docker rm "$CONTAINER_NAME" || true
+            docker rm kintera-frontend || true
 
 
             # ==========================================
-            # Start nouveau container
+            # Start new container
             # ==========================================
 
-            echo "🚀 Starting Kintera..."
+            echo "🚀 Starting new container..."
 
             docker run -d \
-              --name "$CONTAINER_NAME" \
+              --name kintera-frontend \
               --restart unless-stopped \
-              --init \
-              -p "127.0.0.1:${APP_PORT}:3000" \
-              -e NODE_ENV=production \
-              "$IMAGE"
+              -p 5300:3000 \
+              kintera:frontend
 
 
             # ==========================================
-            # Health check
+            # Remove tar file
             # ==========================================
 
-            echo "🩺 Checking Kintera..."
+            echo "🧹 Cleaning temporary Docker file..."
 
-            OK=0
-
-            for i in $(seq 1 30); do
-
-              if curl \
-                --fail \
-                --silent \
-                "http://127.0.0.1:${APP_PORT}/api/health" \
-                >/dev/null 2>&1
-              then
-
-                OK=1
-
-                echo "✅ Kintera is online"
-
-                break
-
-              fi
-
-              echo "⏳ Waiting $i/30..."
-
-              sleep 3
-
-            done
+            rm -f /tmp/kintera-frontend.tar
 
 
             # ==========================================
-            # Rollback
+            # Check container
             # ==========================================
 
-            if [ "$OK" -ne 1 ]; then
+            echo "=========================================="
+            echo "📊 CONTAINER STATUS"
+            echo "=========================================="
 
-              echo "=========================================="
-              echo "❌ DEPLOYMENT FAILED"
-              echo "=========================================="
+            docker ps --filter name=kintera-frontend
 
-              echo "📋 Container logs:"
-
-              docker logs \
-                --tail 100 \
-                "$CONTAINER_NAME" || true
-
-
-              # ----------------------------------------
-              # Stop failed container
-              # ----------------------------------------
-
-              docker stop "$CONTAINER_NAME" || true
-
-              docker rm "$CONTAINER_NAME" || true
-
-
-              # ----------------------------------------
-              # Rollback
-              # ----------------------------------------
-
-              if docker image inspect "$PREVIOUS_IMAGE" >/dev/null 2>&1; then
-
-                echo "=========================================="
-                echo "↩️ ROLLING BACK"
-                echo "=========================================="
-
-                docker run -d \
-                  --name "$CONTAINER_NAME" \
-                  --restart unless-stopped \
-                  --init \
-                  -p "127.0.0.1:${APP_PORT}:3000" \
-                  -e NODE_ENV=production \
-                  "$PREVIOUS_IMAGE"
-
-                echo "✅ Previous version restored"
-
-              else
-
-                echo "⚠️ No previous version available"
-
-              fi
-
-
-              # ----------------------------------------
-              # Cleanup
-              # ----------------------------------------
-
-              rm -f "/tmp/$TAR_FILE"
-
-              exit 1
-
-            fi
-
-
-            # ==========================================
-            # Cleanup
-            # ==========================================
-
-            echo "🧹 Cleaning..."
-
-            rm -f "/tmp/$TAR_FILE"
-
-            docker image prune -f >/dev/null 2>&1 || true
-
-
-            # ==========================================
-            # Success
-            # ==========================================
 
             echo "=========================================="
             echo "🎉 KINTERA DEPLOYMENT SUCCESSFUL"
             echo "=========================================="
-
-            docker ps \
-              --filter "name=$CONTAINER_NAME"
